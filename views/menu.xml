@@ -1,0 +1,6 @@
+<odoo>
+    <data>
+        <menuitem id="daily_backup_menu" name="Take Backup" parent="base.menu_custom"/>
+        <menuitem id="daily_backup_conf_menu" parent="daily_backup_menu" action="dailybackup.backup_process_action" />
+    </data>
+</odoo>

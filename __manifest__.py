@@ -2,7 +2,7 @@
 {
     'name': "dailybackup",
 
-    'summary': 'Automated backups',
+    'summary': 'Daily Automated Backups',
 
     'description': """The Database Auto-Backup module enables the user to make configurations for the automatic backup of the database. Backups can be taken on the local system or on a remote server, through SFTP.
                         You only have to specify the hostname, port, backup location and databasename (all will be pre-filled by default with correct data.
@@ -31,7 +31,8 @@
     'data': [
         'security/user_groups.xml',
         'security/ir.model.access.csv',
-        'views/backup_view.xml',
-        'data/backup_data.xml',
+        'views/backupprocess_view.xml',
+        'views/menu.xml',
+        'data/backupprocess_data.xml',
     ],
 }

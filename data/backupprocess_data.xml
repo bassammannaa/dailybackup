@@ -1,17 +1,20 @@
 <?xml version="1.0" ?>
 <odoo>
   <data noupdate="1">
-    <record id="backup_scheduler" model="ir.cron">
+    <record id="backupprocess_scheduler" model="ir.cron">
       <field name="interval_type">days</field>
-      <field name="name">Backup scheduler</field>
+      <field name="name">Daily Backup Process scheduler</field>
       <field name="numbercall">-1</field>
       <field name="priority">5</field>
-      <field name="doall">False</field>
+      <field name="doall" eval="True"/>
       <field name="active">False</field>
       <field name="interval_number">1</field>
-      <field name="model_id" ref="model_db_backup"/>
+      <field name="model_id" ref="dailybackup.model_dailybackup_backupprocess"/>
       <field name="state">code</field>
-      <field name="code">model.schedule_backup()</field>
+      <field name="code">model.schedule_backup_process()</field>
     </record>
   </data>
 </odoo>
+
+
+

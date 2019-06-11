@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_autobackup_groupmanager,auto_backup.db_backup,auto_backup.model_auto_backup_db_backup,group_manager,1,1,1,1
+access_dailybackup_backupprocess,Daily Backup Process - Backup Manager,dailybackup.model_dailybackup_backupprocess,backup_process_manager_group,1,1,1,1
+
 
 
