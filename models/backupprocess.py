@@ -24,17 +24,8 @@ try:
     import paramiko
 except ImportError:
     raise ImportError(
-        'This module needs paramiko to automatically write backups to the FTP through SFTP. Please install paramiko on your system. (sudo pip3 install paramiko)')
-
-
-def execute(connector, method, *args):
-    res = False
-    try:
-        res = getattr(connector, method)(*args)
-    except socket.error as error:
-        logger.critical('Error while executing the method "execute". Error: ' + str(error))
-        raise error
-    return res
+        'This module needs paramiko to automatically write backups to the FTP through SFTP. '
+        'Please install paramiko on your system. (python3 -m pip install paramiko)')
 
 
 class BackupProcess(models.Model):
@@ -62,8 +53,6 @@ class BackupProcess(models.Model):
         except Exception as e:
             logger.exception("_get_db_name Method")
             raise ValidationError(e)
-
-
 
     # Columns for local server configuration
     host = fields.Char('Host', )
@@ -194,9 +183,8 @@ class BackupProcess(models.Model):
                             "Function: schedule_backup_process - Folder is directory")
                 except Exception as e:
                     raise ValidationError('Function: schedule_backup_process - error is ' + str(e))
-                
 
-            # Create name for dumpfile.
+                # Create name for dumpfile.
                 bkp_file = '%s_%s.%s' % (time.strftime('%Y_%m_%d_%H_%M_%S'), rec.name, rec.backup_type)
                 file_path = os.path.join(folder_path, bkp_file)
                 uri = 'http://' + rec.host + ':' + rec.port
@@ -206,7 +194,7 @@ class BackupProcess(models.Model):
                 logger.info('Function: schedule_backup_process - Parameters: bkp_file: '
                             '%s - file_path: %s - uri: %s - conn: %s - '
                             'bkp: %s' % (
-                            bkp_file, file_path, uri, conn, bkp))
+                                bkp_file, file_path, uri, conn, bkp))
 
                 try:
                     # try to backup database and write it away
@@ -217,13 +205,14 @@ class BackupProcess(models.Model):
                     logger.debug(
                         "Couldn't backup database %s. Bad database administrator "
                         "password for server running at http://%s:%s" % (
-                        rec.name, rec.host, rec.port))
+                            rec.name, rec.host, rec.port))
                     logger.info(
                         "Function: schedule_backup_process - Parameters: Couldn't backup database %s. "
                         "Bad database administrator password for server running at http://%s:%s" % (
                             rec.name, rec.host, rec.port))
                     logger.debug("Exact error from the exception: " + str(error))
-                    logger.info("Function: schedule_backup_process - Parameters: Exact error from the exception: " + str(error))
+                    logger.info(
+                        "Function: schedule_backup_process - Parameters: Exact error from the exception: " + str(error))
 
                     continue
 
@@ -249,13 +238,14 @@ class BackupProcess(models.Model):
                     logger.info('Function: schedule_backup_process - Parameters: path_to_write_to: '
                                 '%s - ip_host: %s - port_host: %s - user_name_login: %s - '
                                 'password_login: %s' % (
-                                path_to_write_to, ip_host, port_host, user_name_login, password_login))
+                                    path_to_write_to, ip_host, port_host, user_name_login, password_login))
 
                     try:
                         s = paramiko.SSHClient()
                         s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                         s.connect(ip_host, port_host, user_name_login, password_login, timeout=20)
                         sftp = s.open_sftp()
+                        logger.info('Function: schedule_backup_process - success connecting to remote')
                     except Exception as error:
                         logger.critical('Error connecting to remote server! Error: ' + str(error))
                         logger.info('Function: schedule_backup_process - Error connecting to remote'
@@ -306,7 +296,6 @@ class BackupProcess(models.Model):
                                             'We couldn\'t write the file to the remote server. Error: ' + str(err))
                                         logger.info('Copying File % s------ failed' % fullpath)
 
-
                     # Navigate in to the correct folder.
                     sftp.chdir(path_to_write_to)
 
@@ -314,14 +303,18 @@ class BackupProcess(models.Model):
                     # We will check the creation date of every back-up.
                     for file in sftp.listdir(path_to_write_to):
                         if rec.name in file:
+
                             # Get the full path
                             fullpath = os.path.join(path_to_write_to, file)
+
                             # Get the timestamp from the file on the external server
                             timestamp = sftp.stat(fullpath).st_atime
                             createtime = datetime.datetime.fromtimestamp(timestamp)
                             now = datetime.datetime.now()
                             delta = now - createtime
-                            # If the file is older than the days_to_keep_sftp (the days to keep that the user filled in on the Odoo form it will be removed.
+
+                            # If the file is older than the days_to_keep_sftp
+                            # (the days to keep that the user filled in on the Odoo form it will be removed.
                             if delta.days >= rec.days_to_keep_sftp:
                                 # Only delete files, no directories!
                                 if sftp.isfile(fullpath) and (".dump" in file or '.zip' in file):
@@ -329,21 +322,48 @@ class BackupProcess(models.Model):
                                     sftp.unlink(file)
                     # Close the SFTP session.
                     sftp.close()
+
+                    try:
+                        ir_mail_server = self.env['ir.mail_server'].search([('active', '=', 'true')], limit=1)
+                        if ir_mail_server:
+                            message = "Dear,\n\nThe backup for the server " + \
+                                      rec.host + " (IP: " + rec.sftp_host + ") succeeded"
+                            msg = ir_mail_server.build_email(
+                                        email_from=ir_mail_server.smtp_user,
+                                        email_to=[ir_mail_server.smtp_user, rec.email_to_notify],
+                                        subject='Daily Backup : Success',
+                                        body=message,
+                                    )
+                            ir_mail_server.send_email(msg)
+                            logger.info('Function: schedule_backup_process - email sent to inform the success.')
+                    except Exception as e:
+                        logger.info(
+                            'Function: schedule_backup_process - email cannot sent to inform the success due problem ' + str(
+                                e))
+
                 except Exception as e:
-                    logger.debug('Exception! We couldn\'t back up to the FTP server..')
-                    # At this point the SFTP backup failed. We will now check if the user wants
-                    # an e-mail notification about this.
+                    logger.debug('Exception! We could not back up to the FTP server..')
                     if rec.send_mail_sftp_fail:
                         try:
-                            ir_mail_server = self.env['ir.mail_server']
-                            message = "Dear,\n\nThe backup for the server " + rec.host + " (IP: " + rec.sftp_host + ") failed.Please check the following details:\n\nIP address SFTP server: " + rec.sftp_host + "\nUsername: " + rec.sftp_user + "\nPassword: " + rec.sftp_password + "\n\nError details: " + tools.ustr(
-                                e) + "\n\nWith kind regards"
-                            msg = ir_mail_server.build_email("auto_backup@" + rec.name + ".com", [rec.email_to_notify],
-                                                             "Backup from " + rec.host + "(" + rec.sftp_host + ") failed",
-                                                             message)
-                            ir_mail_server.send_email(self._cr, self._uid, msg)
-                        except Exception:
-                            pass
+                            ir_mail_server = self.env['ir.mail_server'].search([('active', '=', 'true')], limit=1)
+                            if ir_mail_server:
+                                message = "Dear,\n\nThe backup for the server " + \
+                                          rec.host + " (IP: " + rec.sftp_host + ") failed"
+                                msg = ir_mail_server.build_email(
+                                    email_from=ir_mail_server.smtp_user,
+                                    email_to=[ir_mail_server.smtp_user, rec.email_to_notify],
+                                    subject='Daily Backup : Failed',
+                                    body=message,
+                                )
+                                ir_mail_server.send_email(msg)
+                                logger.info('Function: schedule_backup_process - email sent to inform the failed.')
+                        except Exception as e:
+                            logger.info(
+                                'Function: schedule_backup_process - email cannot sent to inform '
+                                'the failed due problem ' + str(e))
+
+
+
 
             """
             Remove all old files (on local server) in case this is configured..
@@ -365,4 +385,17 @@ class BackupProcess(models.Model):
                             if os.path.isfile(fullpath) and (".dump" in f or '.zip' in f):
                                 logger.info("Delete local out-of-date file: " + fullpath)
                                 os.remove(fullpath)
+
+
+def execute(connector, method, *args):
+    res = False
+    try:
+        res = getattr(connector, method)(*args)
+    except socket.error as error:
+        logger.critical('Error while executing the method "execute". Error: ' + str(error))
+        raise error
+    return res
+
+
+
 

@@ -10,9 +10,8 @@
                         If you want to write to an external server with SFTP you will need to provide the IP, username and password for the remote backups.
                         You have install the following packages:
                         >> sudo pip install pysftp
-                        >> sudo pip3 install paramiko
+                        >> sudo python3 -m pip install paramiko
                         Automatic backup for all such configured databases can then be scheduled as follows:  
-                                              
                         1) Go to Settings / Technical / Automation / Scheduled actions.
                         2) Search the action 'Backup scheduler'.
                         3) Set it active and choose how often you wish to take backups.
