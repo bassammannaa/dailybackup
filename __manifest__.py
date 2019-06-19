@@ -4,11 +4,13 @@
 
     'summary': 'Daily Automated Backups',
 
-    'description': """The Database Auto-Backup module enables the user to make configurations for the automatic backup of the database. Backups can be taken on the local system or on a remote server, through SFTP.
+    'description': """The Database Auto-Backup module enables the user to make configurations for the automatic backup of the database. 
+                        Backups can be taken on the local system or on a remote server, through SFTP.
                         You only have to specify the hostname, port, backup location and databasename (all will be pre-filled by default with correct data.
                         If you want to write to an external server with SFTP you will need to provide the IP, username and password for the remote backups.
-                        The base of this module is taken from Odoo SA V6.1 (https://www.odoo.com/apps/modules/6.0/auto_backup/) and then upgraded and heavily expanded.
-                        This module is made and provided by VanRoey.be.
+                        You have install the following packages:
+                        >> sudo pip install pysftp
+                        >> sudo pip3 install paramiko
                         Automatic backup for all such configured databases can then be scheduled as follows:  
                                               
                         1) Go to Settings / Technical / Automation / Scheduled actions.
