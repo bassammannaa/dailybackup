@@ -276,6 +276,7 @@ class BackupProcess(models.Model):
 
                     # Loop over all files in the directory.
                     for f in os.listdir(dir):
+                        logger.info('Function: schedule_backup_process - Start looping - dir is :' + str(dir))
                         if rec.name in f:
                             logger.info('Function: schedule_backup_process - Start looping : directory')
                             fullpath = os.path.join(dir, f)
