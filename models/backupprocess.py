@@ -274,9 +274,13 @@ class BackupProcess(models.Model):
                                 pass
                     sftp.chdir(path_to_write_to)
 
+                    logger.info('Function: schedule_backup_process - The new file is ' + str(rec.name))
+
+
                     # Loop over all files in the directory.
                     for f in os.listdir(dir):
-                        logger.info('Function: schedule_backup_process - Start looping - dir is :' + str(f))
+                        logger.info('Function: schedule_backup_process - Start looping the '
+                                    'directory to upload the new file :' + str(f))
                         if rec.name in f:
                             logger.info('Function: schedule_backup_process - Start looping : directory')
                             fullpath = os.path.join(dir, f)
@@ -298,30 +302,29 @@ class BackupProcess(models.Model):
                                             'We couldn\'t write the file to the remote server. Error: ' + str(err))
                                         logger.info('Copying File % s------ failed' % fullpath)
 
-                    # Navigate in to the correct folder.
-                    sftp.chdir(path_to_write_to)
+                        # Navigate in to the correct folder.
+                        sftp.chdir(path_to_write_to)
 
-                    # Loop over all files in the directory from the back-ups.
-                    # We will check the creation date of every back-up.
-                    for file in sftp.listdir(path_to_write_to):
-                        if rec.name in file:
+                        # Loop over all files in the directory from the back-ups.
+                        # We will check the creation date of every back-up.
+                        for file in sftp.listdir(path_to_write_to):
+                            if rec.name in file:
+                                # Get the full path
+                                fullpath = os.path.join(path_to_write_to, file)
 
-                            # Get the full path
-                            fullpath = os.path.join(path_to_write_to, file)
+                                # Get the timestamp from the file on the external server
+                                timestamp = sftp.stat(fullpath).st_atime
+                                createtime = datetime.datetime.fromtimestamp(timestamp)
+                                now = datetime.datetime.now()
+                                delta = now - createtime
 
-                            # Get the timestamp from the file on the external server
-                            timestamp = sftp.stat(fullpath).st_atime
-                            createtime = datetime.datetime.fromtimestamp(timestamp)
-                            now = datetime.datetime.now()
-                            delta = now - createtime
-
-                            # If the file is older than the days_to_keep_sftp
-                            # (the days to keep that the user filled in on the Odoo form it will be removed.
-                            if delta.days >= rec.days_to_keep_sftp:
-                                # Only delete files, no directories!
-                                if sftp.isfile(fullpath) and (".dump" in file or '.zip' in file):
-                                    logger.info("Delete too old file from SFTP servers: " + file)
-                                    sftp.unlink(file)
+                                # If the file is older than the days_to_keep_sftp
+                                # (the days to keep that the user filled in on the Odoo form it will be removed.
+                                if delta.days >= rec.days_to_keep_sftp:
+                                    # Only delete files, no directories!
+                                    if sftp.isfile(fullpath) and (".dump" in file or '.zip' in file):
+                                        logger.info("Delete too old file from SFTP servers: " + file)
+                                        sftp.unlink(file)
                     # Close the SFTP session.
                     sftp.close()
 
